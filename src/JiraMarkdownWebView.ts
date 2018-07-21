@@ -1,7 +1,6 @@
 'use strict';
 import * as vscode from 'vscode';
-// import { resolve } from 'url';
-// var fetch = require('unfetch');
+const nonce = require('nonce')();
 var request = require('request');
 
 export default class JiraMarkdownWebView {
@@ -9,66 +8,76 @@ export default class JiraMarkdownWebView {
 
     private lastText = "";
 
-    public constructor(webView: vscode.WebviewPanel) {
+    private jsSource: string;
+    private nonceString: string;
+
+    readonly invisibleDelim = "\u200C";
+
+    public constructor(webView: vscode.WebviewPanel, jsSource: string) {
         this.webView = webView;
+        this.jsSource = jsSource;
+        this.nonceString = nonce();
     }
 
     public async update() {
         let editor = vscode.window.activeTextEditor as vscode.TextEditor;
         let text = editor.document.getText();
-        if (this.lastText !== text) {
-            let html = await this.convertToHtml(text);
-            this.webView.webview.html = html;
-            this.lastText = text;
-        }
+        let cursorPos = this.getCursorPos(editor.selection.active, text);
+        // cursorPos--;
+        text = text.substr(0, cursorPos) + this.invisibleDelim + text.substr(cursorPos); //Insert cursor marker
+        // let hasUnicode = this.hasUnicode(text);
+        let body = await this.convertToHtml(text);
+        let html = this.getWebviewContent(body);
+        // hasUnicode = this.hasUnicode(text);
+        this.webView.webview.html = html;
+        this.webView.webview.postMessage({ command: "selectLine", linePercent: 0, textToMatch: "" });
+        this.lastText = text;
     }
 
-    readonly extraHtml = `<script>
-        function scrollToLine(line) {
-            let elems = document.body.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, pre, blockquote, hr, table');
-            if (elems.length > 0) {
-                elems[line].scrollIntoView();
-                // $(body).stop();
-                // $(body).animate({ scrollTop: elems[line].offsetTop, queue: false });
-            }
-        }
+    // private hasUnicode (str: string) {
+    //     for (var i = 0; i < str.length; i++) {
+    //         if (str.charAt(i) === this.invisibleDelim) {
+    //             return i;
+    //         } 
+    //     }
+    //     return -1;
+    // }
 
-        function selectLine(line) {
-            let elems = document.body.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, pre, blockquote, hr, table');
-            if (elems.length > 0) {
-                var count = elems.length;
-                for (var i = 0; i < count; i++) {
-                    if (i === line) {
-                        elems[i].classList.add('selectedLine');
-                    } else {
-                        elems[i].classList.remove('selectedLine');
+    private getWebviewContent(body: string) {
+        return `
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+            
+                <meta http-equiv="Content-Security-Policy" 
+                    content="default-src 'none'; img-src vscode-resource: https:; script-src vscode-resource:; style-src 'nonce-${this.nonceString}'">
+            
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <script src="${this.jsSource}"></script>
+                <style nonce="${this.nonceString}">
+                    p, h1, h2, h3, h4, h5, h6, li, pre, blockquote, hr, table {
+                        border-left: thick solid transparent;
+                        padding-left: 5px;
                     }
-                }
-            }
-        }
-    
-        window.addEventListener('message', event => {
-            const message = event.data;
-            switch (message.command) {
-                case 'scroll':
-                    scrollToLine(message.line);
-                    break;
-                case 'selectLine':
-                    selectLine(message.line);
-                    break;
-            }
-        });
-    </script>
-    <style>
-        .selectedLine {
-            border-left: thick solid #666666;
-        }
-    </style>
-    `;
+                    .selectedLine {
+                        border-left: thick solid #666666;
+                    }
+                    li {
+                        list-style-position: inside;
+                    }
+                </style>
+            </head>
+            <body>
+                ${body}
+            </body>
+            </html>
+        `;
+    }
 
     private convertToHtml(text: string): Promise<string> {
         console.log("> Making api request");
-        var requestPromise = new Promise<string>((res, rej) => {
+        return new Promise<string>((res, rej) => {
             request(
                 {
                     url: 'https://jira.atlassian.com/rest/api/1.0/render',
@@ -84,17 +93,35 @@ export default class JiraMarkdownWebView {
                     // console.log('error:', error); // Print the error if one occurred
                     // console.log('statusCode:', response && response.statusCode); // Print the response status code if a response was received
                     // console.log('body:', body); // Print the HTML for the Google homepage.
-                    body += this.extraHtml;
                     res(body);
                 }
             );
         });
-        // var requestPromise = new Promise<string>((resolve, rej) => {
-        //     var html = text.split("\n").map(line => { return "<p>" + line + "</p>"; }).join("");
-        //     html += this.javascript;
-        //     resolve(html);
-        // });
+    }
 
-        return requestPromise;
+    private getCursorPos(cursorPos: vscode.Position, str: string) {
+        var currentLine = 0;
+        var currentChar = 0;
+        var strLength = str.length;
+        if (cursorPos.line === 0) {
+            currentChar = 0;
+        } else {
+            while (true) {
+                if (currentChar === strLength) {
+                    break;
+                }
+                if (str.charAt(currentChar) === "\n") {
+                    currentLine++;
+                    if (currentLine === cursorPos.line) {
+                        currentChar++;
+                        break;
+                    }
+                }
+                currentChar++;
+            }
+        }
+    
+        currentChar += cursorPos.character;
+        return currentChar;
     }
 }
