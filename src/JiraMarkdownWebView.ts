@@ -22,9 +22,33 @@ export default class JiraMarkdownWebView {
     public async update() {
         let editor = vscode.window.activeTextEditor as vscode.TextEditor;
         let text = editor.document.getText();
-        let cursorPos = this.getCursorPos(editor.selection.active, text);
+
+        //Insert invisible delim to mark the line
+        //If if the end of the current line ends with }
+        /*
+            match   {{monospaced}}
+            match   {quote}
+                        here is quotable
+                        content to be quoted
+                    {quote} 
+            match   {quote}here is quotable content to be quoted{quote} 
+            NOTE: detect if at the end or beginning of curly quote....
+        */
+        let selectedLineText = editor.document.lineAt(editor.selection.active.line).text;
+        if (selectedLineText.replace(/\s/g, '').length !== 0) {
+            let lines = text.split(/\r?\n/);
+            for (var i = 0; i < editor.document.lineCount; i++) {
+                if (i === editor.selection.active.line) {
+                    lines[i] += this.invisibleDelim;
+                }
+            }
+            text = lines.join("\n");
+        }
+
+        
+        // let cursorPos = this.getCursorPos(editor.selection.active, text);
         // cursorPos--;
-        text = text.substr(0, cursorPos) + this.invisibleDelim + text.substr(cursorPos); //Insert cursor marker
+        // text = text.substr(0, cursorPos) + this.invisibleDelim + text.substr(cursorPos); //Insert cursor marker
         // let hasUnicode = this.hasUnicode(text);
         let body = await this.convertToHtml(text);
         let html = this.getWebviewContent(body);
@@ -56,7 +80,7 @@ export default class JiraMarkdownWebView {
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <script src="${this.jsSource}"></script>
                 <style nonce="${this.nonceString}">
-                    p, h1, h2, h3, h4, h5, h6, li, pre, blockquote, hr, table {
+                    body > * {
                         border-left: thick solid transparent;
                         padding-left: 5px;
                     }
