@@ -1,8 +1,8 @@
 {
     "name": "jira-wiki-previewer",
-    "displayName": "jira-wiki-previewer",
+    "displayName": "Jira Wiki Previewer",
     "description": "",
-    "version": "0.0.1",
+    "version": "0.1.0",
     "publisher": "ragnoroct",
     "repository": {
         "type": "git",
@@ -28,7 +28,7 @@
                     "default": "",
                     "description": "The host url of your jira solution. Such as 'https://jira.atlassian.com/'",
                     "required": true
-                } 
+                }
             }
         },
         "commands": [
@@ -42,17 +42,25 @@
             }
         ],
         "menus": {
-            "editor/title": [{
-                "when": "editorLangId == jirawiki",
-                "command": "extension.showJiraWikiPreview",
-                "group": "navigation"
-            }]
+            "editor/title": [
+                {
+                    "when": "editorLangId == jirawiki",
+                    "command": "extension.showJiraWikiPreview",
+                    "group": "navigation"
+                }
+            ]
         },
-        "languages": [{
-            "id": "jirawiki",
-            "extensions": [ ".jwik" ],
-            "aliases": [ "Jira Wiki" ]
-        }]
+        "languages": [
+            {
+                "id": "jirawiki",
+                "extensions": [
+                    ".jwik"
+                ],
+                "aliases": [
+                    "Jira Wiki"
+                ]
+            }
+        ]
     },
     "scripts": {
         "vscode:prepublish": "npm run compile",

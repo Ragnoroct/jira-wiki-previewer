@@ -1,7 +1,7 @@
 'use strict';
 import * as vscode from 'vscode';
 import * as url from 'url';
-var nonce = require('nonce')();
+const crypto = require('crypto');
 var request = require('request');
 
 export default class JiraMarkdownWebView {
@@ -44,9 +44,9 @@ export default class JiraMarkdownWebView {
 
         if (text !== this.lastText) {
             let body = await this.convertToHtml(text);
-            let nonceString = nonce();
+            let nonceString = crypto.randomBytes(16).toString('base64');
             let html = this.getWebviewContent(body, nonceString);
-            html = html.replace(/(style=".*?")/g, `nonce="${nonceString}" $1`);
+            html = html.replace(/(style=".*?")/g, "");
             this.webView.webview.html = html;
             this.webView.webview.postMessage({ command: "selectLine", linePercent: 0, textToMatch: "" });
             this.lastText = text;
@@ -61,7 +61,7 @@ export default class JiraMarkdownWebView {
                 <meta charset="UTF-8">
             
                 <meta http-equiv="Content-Security-Policy" 
-                    content="default-src 'none'; img-src vscode-resource: https:; script-src vscode-resource:; style-src vscode-resource: 'nonce-${nonceString};">
+                    content="default-src 'none'; img-src vscode-resource: https:; script-src vscode-resource:; style-src vscode-resource: 'nonce-${nonceString}';">
             
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <script src="${this.jsSource}"></script>
