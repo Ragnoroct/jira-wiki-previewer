@@ -43,7 +43,7 @@
         ],
         "menus": {
             "editor/title": [{
-                "when": "resourceLangId == jirawiki",
+                "when": "editorLangId == jirawiki",
                 "command": "extension.showJiraWikiPreview",
                 "group": "navigation"
             }]
