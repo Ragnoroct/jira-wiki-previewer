@@ -2,7 +2,7 @@
     "name": "jira-wiki-previewer",
     "displayName": "Jira Wiki Previewer",
     "description": "",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "publisher": "ragnoroct",
     "repository": {
         "type": "git",
@@ -36,8 +36,8 @@
                 "command": "extension.showJiraWikiPreview",
                 "title": "Show Jira Wiki Preview",
                 "icon": {
-                    "light": "./media/PreviewOnRightPane_16x.svg",
-                    "dark": "./media/PreviewOnRightPane_16x_dark.svg"
+                    "light": "./resources/PreviewOnRightPane_16x.svg",
+                    "dark": "./resources/PreviewOnRightPane_16x_dark.svg"
                 }
             }
         ],

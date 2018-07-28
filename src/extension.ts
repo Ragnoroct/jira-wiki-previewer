@@ -16,13 +16,15 @@ export function activate(context: vscode.ExtensionContext) {
                 vscode.ViewColumn.Two,
                 {
                     enableScripts: true,
-                    localResourceRoots: [vscode.Uri.file(context.extensionPath)]
+                    localResourceRoots: [
+                        vscode.Uri.file(path.join(context.extensionPath, "resources"))
+                    ]
                 }
             );
 
-            const onDiskPath = vscode.Uri.file(path.join(context.extensionPath, 'src', 'webview.js'));
+            const onDiskPath = vscode.Uri.file(path.join(context.extensionPath, 'resources', 'webview.js'));
             const jsSrc = onDiskPath.with({ scheme: 'vscode-resource' });
-            const cssSrc = vscode.Uri.file(path.join(context.extensionPath, 'src', 'webview.css')).with({ scheme: 'vscode-resource' });
+            const cssSrc = vscode.Uri.file(path.join(context.extensionPath, 'resources', 'webview.css')).with({ scheme: 'vscode-resource' });
             const webView = new JiraMarkdownWebView(panel, jsSrc.toString(), cssSrc.toString());
 
             let baseUrl = vscode.workspace.getConfiguration().get<string>('jira-wiki-previewer.jiraHostUrl') as string;
