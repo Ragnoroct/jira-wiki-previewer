@@ -23,7 +23,7 @@
             "type": "object",
             "title": "Jira Wiki Preview configuration",
             "properties": {
-                "jira-wiki-preview.jiraHostUrl": {
+                "jira-wiki-previewer.jiraHostUrl": {
                     "type": "string",
                     "default": "",
                     "description": "The host url of your jira solution. Such as 'https://jira.atlassian.com/'",
