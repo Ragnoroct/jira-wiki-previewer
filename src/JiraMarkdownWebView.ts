@@ -1,6 +1,6 @@
 'use strict';
 import * as vscode from 'vscode';
-import * as path from 'path'
+import * as url from 'url';
 const nonce = require('nonce')();
 var request = require('request');
 
@@ -82,14 +82,14 @@ export default class JiraMarkdownWebView {
     }
 
     private convertToHtml(text: string): Promise<string> {
-        if (this.baseHost === undefined) {
+        if (this._baseHost === undefined) {
             vscode.window.showErrorMessage("This extension needs a base url set in configuration 'jira-wiki-preview.jiraHostUrl'");
         }
-        let url = vscode.Uri.parse(path.join(this.baseHost, "rest/api/1.0/render"));
+        let apiUrl = vscode.Uri.parse(url.resolve(this._baseHost, "/rest/api/1.0/render"));
         return new Promise<string>((res, rej) => {
             request(
                 {
-                    url: url,
+                    url: apiUrl.toString(),
                     method: 'post',
                     headers: {
                         "Content-Type": "application/json",
@@ -98,6 +98,10 @@ export default class JiraMarkdownWebView {
                     body: JSON.stringify({"rendererType":"atlassian-wiki-renderer","unrenderedMarkup": text,"issueKey":"SUPPORT-1"})
                 },
                 (error: any, response: any, body: any) => {
+                    if (error) {
+                        vscode.window.showErrorMessage("Invalid jiraHostUrl: " + error.message);
+                        body = "<h>You need to set jira-wiki-preview.jiraHostUrl to a correct url.";
+                    }
                     res(body);
                 }
             );

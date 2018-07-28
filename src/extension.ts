@@ -21,17 +21,22 @@ export function activate(context: vscode.ExtensionContext) {
             const onDiskPath = vscode.Uri.file(path.join(context.extensionPath, 'src', 'webview.js'));
             const jsSrc = onDiskPath.with({ scheme: 'vscode-resource' });
             const webView = new JiraMarkdownWebView(panel, jsSrc.toString());
-            webView.update();
 
-            let baseUrl = vscode.workspace.getConfiguration().get('jira-wiki-preview.jiraHostUrl');
-            
+            let baseUrl = vscode.workspace.getConfiguration().get<string>('jira-wiki-preview.jiraHostUrl') as string;
+            webView.baseHost = baseUrl;
             vscode.workspace.onDidChangeConfiguration(e => {
-                let configName = e.affectsConfiguration.name;
+                let baseUrlChanged = e.affectsConfiguration('jira-wiki-preview.jiraHostUrl');
+                if (baseUrlChanged === true) {
+                    let baseUrl = vscode.workspace.getConfiguration().get<string>('jira-wiki-preview.jiraHostUrl') as string;
+                    webView.baseHost = baseUrl;
+                }
             });
+            
+            webView.update();
 
             vscode.workspace.onDidChangeTextDocument((e: vscode.TextDocumentChangeEvent) => {
                 var activeTextEditor = vscode.window.activeTextEditor;
-                if (activeTextEditor !== undefined) {
+                if (activeTextEditor !== undefined && activeTextEditor.document.languageId === "jirawiki") {
                     if (e.document === activeTextEditor.document) {
                         webView.update();
                     }
@@ -39,7 +44,7 @@ export function activate(context: vscode.ExtensionContext) {
             });
 
             vscode.window.onDidChangeTextEditorSelection((event: vscode.TextEditorSelectionChangeEvent) => {
-                if (event.textEditor === vscode.window.activeTextEditor) {
+                if (event.textEditor === vscode.window.activeTextEditor && event.textEditor.document.languageId === "jirawiki") {
                     webView.update();
                     let line = event.selections[0].start.line;
                     let linePercent = line / event.textEditor.document.lineCount;
@@ -50,7 +55,7 @@ export function activate(context: vscode.ExtensionContext) {
 
             context.subscriptions.push(
                 vscode.window.onDidChangeTextEditorVisibleRanges((event: vscode.TextEditorVisibleRangesChangeEvent) => {
-                    if (event.textEditor === vscode.window.activeTextEditor) {
+                    if (event.textEditor === vscode.window.activeTextEditor && event.textEditor.document.languageId === "jirawiki") {
                         let linePercent = event.visibleRanges[0].start.line / event.textEditor.document.lineCount;
                         webView.webView.webview.postMessage({ command: "scroll", linePercent });
                     }
