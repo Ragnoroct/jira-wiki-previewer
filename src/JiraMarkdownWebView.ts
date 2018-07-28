@@ -1,7 +1,7 @@
 'use strict';
 import * as vscode from 'vscode';
 import * as url from 'url';
-const nonce = require('nonce')();
+var nonce = require('nonce')();
 var request = require('request');
 
 export default class JiraMarkdownWebView {
@@ -10,15 +10,15 @@ export default class JiraMarkdownWebView {
     private lastText = "";
 
     private jsSource: string;
-    private nonceString: string;
+    private cssSource: string;
     private _baseHost: string = "";
 
     readonly invisibleDelim = "\u200C";
 
-    public constructor(webView: vscode.WebviewPanel, jsSource: string) {
+    public constructor(webView: vscode.WebviewPanel, jsSource: string, cssSource: string) {
         this.webView = webView;
         this.jsSource = jsSource;
-        this.nonceString = nonce();
+        this.cssSource = cssSource;
     }
 
     public set baseHost(value: string) { this._baseHost = value; }
@@ -40,16 +40,20 @@ export default class JiraMarkdownWebView {
             text = lines.join("\n");
         }
 
+        //Add nonce to inline styles
+
         if (text !== this.lastText) {
             let body = await this.convertToHtml(text);
-            let html = this.getWebviewContent(body);
+            let nonceString = nonce();
+            let html = this.getWebviewContent(body, nonceString);
+            html = html.replace(/(style=".*?")/g, `nonce="${nonceString}" $1`);
             this.webView.webview.html = html;
             this.webView.webview.postMessage({ command: "selectLine", linePercent: 0, textToMatch: "" });
             this.lastText = text;
         }
     }
 
-    private getWebviewContent(body: string) {
+    private getWebviewContent(body: string, nonceString: string) {
         return `
             <!DOCTYPE html>
             <html lang="en">
@@ -57,22 +61,11 @@ export default class JiraMarkdownWebView {
                 <meta charset="UTF-8">
             
                 <meta http-equiv="Content-Security-Policy" 
-                    content="default-src 'none'; img-src vscode-resource: https:; script-src vscode-resource:; style-src 'nonce-${this.nonceString}'">
+                    content="default-src 'none'; img-src vscode-resource: https:; script-src vscode-resource:; style-src vscode-resource: 'nonce-${nonceString};">
             
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <script src="${this.jsSource}"></script>
-                <style nonce="${this.nonceString}">
-                    body > * {
-                        border-left: thick solid transparent;
-                        padding-left: 5px;
-                    }
-                    .selectedLine {
-                        border-left: thick solid #666666;
-                    }
-                    li {
-                        list-style-position: inside;
-                    }
-                </style>
+                <link rel="stylesheet" type="text/css" href="${this.cssSource}">
             </head>
             <body>
                 ${body}

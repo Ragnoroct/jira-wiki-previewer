@@ -1,0 +1,10 @@
+body > * {
+    border-left: thick solid transparent;
+    padding-left: 5px;
+}
+.selectedLine {
+    border-left: thick solid #666666;
+}
+li {
+    list-style-position: inside;
+}

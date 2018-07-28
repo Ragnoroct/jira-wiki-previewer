@@ -8,11 +8,13 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(
         vscode.commands.registerCommand('extension.showJiraWikiPreview', () => {
+            var eventList: vscode.Disposable[] = [];
+            
             const panel = vscode.window.createWebviewPanel(
                 "jira-preview",
                 "Jira Preview",
                 vscode.ViewColumn.Two,
-                { 
+                {
                     enableScripts: true,
                     localResourceRoots: [vscode.Uri.file(context.extensionPath)]
                 }
@@ -20,17 +22,18 @@ export function activate(context: vscode.ExtensionContext) {
 
             const onDiskPath = vscode.Uri.file(path.join(context.extensionPath, 'src', 'webview.js'));
             const jsSrc = onDiskPath.with({ scheme: 'vscode-resource' });
-            const webView = new JiraMarkdownWebView(panel, jsSrc.toString());
+            const cssSrc = vscode.Uri.file(path.join(context.extensionPath, 'src', 'webview.css')).with({ scheme: 'vscode-resource' });
+            const webView = new JiraMarkdownWebView(panel, jsSrc.toString(), cssSrc.toString());
 
-            let baseUrl = vscode.workspace.getConfiguration().get<string>('jira-wiki-preview.jiraHostUrl') as string;
+            let baseUrl = vscode.workspace.getConfiguration().get<string>('jira-wiki-previewer.jiraHostUrl') as string;
             webView.baseHost = baseUrl;
             vscode.workspace.onDidChangeConfiguration(e => {
-                let baseUrlChanged = e.affectsConfiguration('jira-wiki-preview.jiraHostUrl');
+                let baseUrlChanged = e.affectsConfiguration('jira-wiki-previewer.jiraHostUrl');
                 if (baseUrlChanged === true) {
-                    let baseUrl = vscode.workspace.getConfiguration().get<string>('jira-wiki-preview.jiraHostUrl') as string;
+                    let baseUrl = vscode.workspace.getConfiguration().get<string>('jira-wiki-previewer.jiraHostUrl') as string;
                     webView.baseHost = baseUrl;
                 }
-            });
+            }, null, eventList);
             
             webView.update();
 
@@ -41,7 +44,7 @@ export function activate(context: vscode.ExtensionContext) {
                         webView.update();
                     }
                 }
-            });
+            }, null, eventList);
 
             vscode.window.onDidChangeTextEditorSelection((event: vscode.TextEditorSelectionChangeEvent) => {
                 if (event.textEditor === vscode.window.activeTextEditor && event.textEditor.document.languageId === "jirawiki") {
@@ -51,16 +54,20 @@ export function activate(context: vscode.ExtensionContext) {
                     let textToMatch = event.textEditor.document.lineAt(line).text.replace(/\W/g, '');
                     webView.webView.webview.postMessage({ command: "selectLine", linePercent: linePercent, textToMatch: textToMatch });
                 }
-            });
+            }, null, eventList);
 
-            context.subscriptions.push(
-                vscode.window.onDidChangeTextEditorVisibleRanges((event: vscode.TextEditorVisibleRangesChangeEvent) => {
-                    if (event.textEditor === vscode.window.activeTextEditor && event.textEditor.document.languageId === "jirawiki") {
-                        let linePercent = event.visibleRanges[0].start.line / event.textEditor.document.lineCount;
-                        webView.webView.webview.postMessage({ command: "scroll", linePercent });
-                    }
-                }),
-            );
+            vscode.window.onDidChangeTextEditorVisibleRanges((event: vscode.TextEditorVisibleRangesChangeEvent) => {
+                if (event.textEditor === vscode.window.activeTextEditor && event.textEditor.document.languageId === "jirawiki") {
+                    let linePercent = event.visibleRanges[0].start.line / event.textEditor.document.lineCount;
+                    webView.webView.webview.postMessage({ command: "scroll", linePercent });
+                }
+            }, null, eventList);
+
+            panel.onDidDispose(() => {
+                eventList.forEach(event => {
+                    event.dispose();
+                });
+            }, null, context.subscriptions);
         })
     );
 }
