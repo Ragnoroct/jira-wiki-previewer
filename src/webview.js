@@ -13,7 +13,6 @@ function selectLine(linePercent, textToMatch) {
         var count = elems.length;
         for (var i = 0; i < count; i++) {
             elems[i].classList.remove('selectedLine');
-            // console.log(elems[i].innerText);
         }
     }
 
@@ -23,28 +22,10 @@ function selectLine(linePercent, textToMatch) {
     if (match !== null) {
         match.classList.add('selectedLine');
     }
-    
-    // var percentages = [];
-    // var nodesSnapshot = document.evaluate(`//body/*[contains(., '${textToMatch}')]`, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null );
-    // if (nodesSnapshot.length > 1) {
-    //     for (var i=0 ; i < nodesSnapshot.snapshotLength; i++) {
-    //         var node = nodesSnapshot.snapshotItem(i);
-    //         var elemPosPercent = node.offsetTop / document.body.scrollHeight;
-    //         percentages.push(elemPosPercent);
-    //     }
-    
-    //     var closestNodeIndex = percentages.reduce((prev, curr, currIndex) => Math.abs(curr - linePercent) < Math.abs(prev - linePercent) ? currIndex : currIndex - 1);
-    //     var nodeToHighlight = nodesSnapshot.snapshotItem(closestNodeIndex);
-    //     nodeToHighlight.classList.add('selectedLine');
-    // } else {
-    //     var line = Math.ceil(linePercent * elems.length);
-    //     elems[line].classList.add('selectedLine');
-    // }
 }
 
 window.addEventListener('message', event => {
     const message = event.data;
-    console.log(message)
     switch (message.command) {
         case 'scroll':
             scrollToLine(message.linePercent);

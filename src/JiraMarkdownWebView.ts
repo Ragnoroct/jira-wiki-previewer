@@ -23,49 +23,27 @@ export default class JiraMarkdownWebView {
         let editor = vscode.window.activeTextEditor as vscode.TextEditor;
         let text = editor.document.getText();
 
-        //Insert invisible delim to mark the line
-        //If if the end of the current line ends with }
-        /*
-            match   {{monospaced}}
-            match   {quote}
-                        here is quotable
-                        content to be quoted
-                    {quote} 
-            match   {quote}here is quotable content to be quoted{quote} 
-            NOTE: detect if at the end or beginning of curly quote....
-        */
         let selectedLineText = editor.document.lineAt(editor.selection.active.line).text;
         if (selectedLineText.replace(/\s/g, '').length !== 0) {
             let lines = text.split(/\r?\n/);
-            for (var i = 0; i < editor.document.lineCount; i++) {
-                if (i === editor.selection.active.line) {
-                    lines[i] += this.invisibleDelim;
-                }
+            let lineToEdit = lines[editor.selection.active.line];
+            if (/^\s*{[^{}]*}\s*$/.test(lineToEdit) === false) {
+                lineToEdit += " " + this.invisibleDelim;
+            } else {
+                lineToEdit += this.invisibleDelim;
             }
+            lines[editor.selection.active.line] = lineToEdit;
             text = lines.join("\n");
         }
 
-        
-        // let cursorPos = this.getCursorPos(editor.selection.active, text);
-        // cursorPos--;
-        // text = text.substr(0, cursorPos) + this.invisibleDelim + text.substr(cursorPos); //Insert cursor marker
-        // let hasUnicode = this.hasUnicode(text);
-        let body = await this.convertToHtml(text);
-        let html = this.getWebviewContent(body);
-        // hasUnicode = this.hasUnicode(text);
-        this.webView.webview.html = html;
-        this.webView.webview.postMessage({ command: "selectLine", linePercent: 0, textToMatch: "" });
-        this.lastText = text;
+        if (text !== this.lastText) {
+            let body = await this.convertToHtml(text);
+            let html = this.getWebviewContent(body);
+            this.webView.webview.html = html;
+            this.webView.webview.postMessage({ command: "selectLine", linePercent: 0, textToMatch: "" });
+            this.lastText = text;
+        }
     }
-
-    // private hasUnicode (str: string) {
-    //     for (var i = 0; i < str.length; i++) {
-    //         if (str.charAt(i) === this.invisibleDelim) {
-    //             return i;
-    //         } 
-    //     }
-    //     return -1;
-    // }
 
     private getWebviewContent(body: string) {
         return `
@@ -100,7 +78,6 @@ export default class JiraMarkdownWebView {
     }
 
     private convertToHtml(text: string): Promise<string> {
-        console.log("> Making api request");
         return new Promise<string>((res, rej) => {
             request(
                 {
@@ -113,39 +90,9 @@ export default class JiraMarkdownWebView {
                     body: JSON.stringify({"rendererType":"atlassian-wiki-renderer","unrenderedMarkup": text,"issueKey":"SUPPORT-1"})
                 },
                 (error: any, response: any, body: any) => {
-                    // console.log(response);
-                    // console.log('error:', error); // Print the error if one occurred
-                    // console.log('statusCode:', response && response.statusCode); // Print the response status code if a response was received
-                    // console.log('body:', body); // Print the HTML for the Google homepage.
                     res(body);
                 }
             );
         });
-    }
-
-    private getCursorPos(cursorPos: vscode.Position, str: string) {
-        var currentLine = 0;
-        var currentChar = 0;
-        var strLength = str.length;
-        if (cursorPos.line === 0) {
-            currentChar = 0;
-        } else {
-            while (true) {
-                if (currentChar === strLength) {
-                    break;
-                }
-                if (str.charAt(currentChar) === "\n") {
-                    currentLine++;
-                    if (currentLine === cursorPos.line) {
-                        currentChar++;
-                        break;
-                    }
-                }
-                currentChar++;
-            }
-        }
-    
-        currentChar += cursorPos.character;
-        return currentChar;
     }
 }
