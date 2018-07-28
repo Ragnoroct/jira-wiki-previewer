@@ -23,6 +23,12 @@ export function activate(context: vscode.ExtensionContext) {
             const webView = new JiraMarkdownWebView(panel, jsSrc.toString());
             webView.update();
 
+            let baseUrl = vscode.workspace.getConfiguration().get('jira-wiki-preview.jiraHostUrl');
+            
+            vscode.workspace.onDidChangeConfiguration(e => {
+                let configName = e.affectsConfiguration.name;
+            });
+
             vscode.workspace.onDidChangeTextDocument((e: vscode.TextDocumentChangeEvent) => {
                 var activeTextEditor = vscode.window.activeTextEditor;
                 if (activeTextEditor !== undefined) {

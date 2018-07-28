@@ -1,7 +1,6 @@
 function scrollToLine(linePercent) {
-    let elems = document.body.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, pre, blockquote, hr, table');
+    let elems = document.body.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, pre, blockquote, hr, tr');
     let line = Math.ceil(elems.length * linePercent);
-    console.log("line:" + line)
     if (elems.length > 0) {
         elems[line].scrollIntoView();
     }

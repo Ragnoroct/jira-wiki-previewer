@@ -11,16 +11,44 @@
         "Other"
     ],
     "activationEvents": [
-        "onCommand:extension.showJiraWikiPreview"
+        "onLanguage:jirawiki"
     ],
     "main": "./out/extension",
     "contributes": {
+        "configuration": {
+            "type": "object",
+            "title": "Jira Wiki Preview configuration",
+            "properties": {
+                "jira-wiki-preview.jiraHostUrl": {
+                    "type": "string",
+                    "default": "",
+                    "description": "The host url of your jira solution. Such as 'https://jira.atlassian.com/'",
+                    "required": true
+                } 
+            }
+        },
         "commands": [
             {
                 "command": "extension.showJiraWikiPreview",
-                "title": "Show Jira Wiki Preview"
+                "title": "Show Jira Wiki Preview",
+                "icon": {
+                    "light": "./media/PreviewOnRightPane_16x.svg",
+                    "dark": "./media/PreviewOnRightPane_16x_dark.svg"
+                }
             }
-        ]
+        ],
+        "menus": {
+            "editor/title": [{
+                "when": "resourceLangId == jirawiki",
+                "command": "extension.showJiraWikiPreview",
+                "group": "navigation"
+            }]
+        },
+        "languages": [{
+            "id": "jirawiki",
+            "extensions": [ ".jwik" ],
+            "aliases": [ "Jira Wiki" ]
+        }]
     },
     "scripts": {
         "vscode:prepublish": "npm run compile",

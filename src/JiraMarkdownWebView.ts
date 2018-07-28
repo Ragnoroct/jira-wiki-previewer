@@ -1,5 +1,6 @@
 'use strict';
 import * as vscode from 'vscode';
+import * as path from 'path'
 const nonce = require('nonce')();
 var request = require('request');
 
@@ -10,6 +11,7 @@ export default class JiraMarkdownWebView {
 
     private jsSource: string;
     private nonceString: string;
+    private _baseHost: string = "";
 
     readonly invisibleDelim = "\u200C";
 
@@ -18,6 +20,8 @@ export default class JiraMarkdownWebView {
         this.jsSource = jsSource;
         this.nonceString = nonce();
     }
+
+    public set baseHost(value: string) { this._baseHost = value; }
 
     public async update() {
         let editor = vscode.window.activeTextEditor as vscode.TextEditor;
@@ -78,10 +82,14 @@ export default class JiraMarkdownWebView {
     }
 
     private convertToHtml(text: string): Promise<string> {
+        if (this.baseHost === undefined) {
+            vscode.window.showErrorMessage("This extension needs a base url set in configuration 'jira-wiki-preview.jiraHostUrl'");
+        }
+        let url = vscode.Uri.parse(path.join(this.baseHost, "rest/api/1.0/render"));
         return new Promise<string>((res, rej) => {
             request(
                 {
-                    url: 'https://jira.atlassian.com/rest/api/1.0/render',
+                    url: url,
                     method: 'post',
                     headers: {
                         "Content-Type": "application/json",
